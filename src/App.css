@@ -1,0 +1,103 @@
+/* Estilos de los componentes del WebChat */
+
+/* Contenedor principal del chat */
+.chat {
+  width: 100%;
+  max-width: 480px;
+  height: 92vh;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .2);
+}
+
+/* Cabecera con el contacto */
+.chat-cabecera {
+  background: #075e54;
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.chat-info h1 { font-size: 17px; }
+.chat-info p { font-size: 13px; opacity: .85; }
+
+/* Zona de mensajes: crece y tiene scroll propio */
+.mensajes {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #e5ddd5;
+}
+
+/* Burbuja de mensaje (común) */
+.mensaje {
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 1.35;
+  word-wrap: break-word;
+}
+
+.mensaje .hora {
+  display: block;
+  font-size: 11px;
+  color: #666;
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* Mis mensajes: a la derecha y en verde claro */
+.mensaje.yo { align-self: flex-end; background: #dcf8c6; }
+
+/* Mensajes del contacto: a la izquierda y en blanco */
+.mensaje.contacto { align-self: flex-start; background: #fff; }
+
+/* Zona de escritura */
+.chat-entrada {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  background: #f0f0f0;
+}
+
+.chat-entrada input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  font-size: 15px;
+  outline: none;
+}
+
+.chat-entrada button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 20px;
+  background: #075e54;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.chat-entrada button:hover { background: #0a7a6d; }
