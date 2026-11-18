@@ -1,11 +1,25 @@
-/* Estilos globales del WebChat */
+/* Estilos globales del WebChat
+   Solo lo mínimo: reset, tipografía y centrado de la app.
+   Los colores del tema viven en App.css con variables CSS. */
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   background: #ece5dd;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  padding: 12px;
+}
+
+/* Cuando el tema oscuro está activo, el fondo de la página
+   también oscurece (App.jsx pone data-tema en <html>) */
+html[data-tema="oscuro"] body {
+  background: #0b141a;
+}
+
+@media (max-width: 720px) {
+  body { padding: 0; align-items: stretch; }
 }

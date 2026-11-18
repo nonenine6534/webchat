@@ -1,129 +1,253 @@
 import { useState, useEffect, useRef } from 'react'
-import Mensaje from './components/Mensaje.jsx'
+import ListaContactos from './components/ListaContactos.jsx'
+import VentanaChat from './components/VentanaChat.jsx'
+import {
+  CONTACTOS,
+  horaActual,
+  crearConversacionesIniciales,
+  crearNoLeidosIniciales,
+} from './data/contactos.js'
 import './App.css'
 
 // ============================================================
-// WebChat en React
+// WebChat en React — componente principal (App)
 //
-// El estado principal es la lista de mensajes. En React no se
-// toca el DOM a mano: se actualiza el estado con setMensajes
-// y React vuelve a dibujar la pantalla automáticamente.
+// Idea central: el estado vive aquí arriba y los componentes
+// hijos solo RECIBEN datos por props y AVISAN con funciones
+// (onSeleccionar, onEnviar). Esto se llama "levantar el estado"
+// (lifting state up) y es un patrón muy preguntado en entrevistas.
+//
+// Estados principales:
+//   conversaciones -> { idContacto: [mensajes] } historial
+//                     independiente por contacto
+//   noLeidos       -> { idContacto: cantidad } para los badges
+//   contactoActivoId -> qué conversación está abierta
+//   escribiendoId  -> id del contacto que está "escribiendo…"
+//                     (null si nadie escribe)
+//   modoOscuro     -> tema visual, guardado en localStorage
 // ============================================================
 
-// Respuestas que el "contacto" envía de forma simulada, en orden
-const RESPUESTAS = [
-  '¡Hola! ¿En qué te puedo ayudar?',
-  'Claro, cuéntame más.',
-  'Muy interesante lo que dices.',
-  'Perfecto, lo reviso y te aviso enseguida.',
-  '¿Podrías darme más detalles?',
-  'De acuerdo, ¡gracias por escribir!',
-]
+// Claves usadas en localStorage (para no escribirlas a mano)
+const CLAVE_TEMA = 'webchat-tema'
+const CLAVE_CONVERSACIONES = 'webchat-conversaciones'
+const CLAVE_NO_LEIDOS = 'webchat-no-leidos'
 
-// Devuelve la hora actual en formato HH:MM (por ejemplo "09:05")
-function horaActual() {
-  const ahora = new Date()
-  const horas = String(ahora.getHours()).padStart(2, '0')
-  const minutos = String(ahora.getMinutes()).padStart(2, '0')
-  return `${horas}:${minutos}`
+// Lee un valor JSON de localStorage de forma segura.
+// Si no existe o está dañado, devuelve el valor por defecto.
+function leerDeLocalStorage(clave, valorPorDefecto) {
+  try {
+    const guardado = localStorage.getItem(clave)
+    return guardado ? JSON.parse(guardado) : valorPorDefecto
+  } catch {
+    return valorPorDefecto
+  }
 }
 
 export default function App() {
-  // Lista de mensajes: cada uno es { id, texto, autor, hora }
-  const [mensajes, setMensajes] = useState([
-    {
-      id: 1,
-      texto: '¡Hola! Soy Ana, tu contacto de práctica. Escríbeme algo para empezar.',
-      autor: 'contacto',
-      hora: horaActual(),
-    },
-  ])
+  // --- Tema: se inicializa desde localStorage (lectura perezosa) ---
+  // Pasar una FUNCIÓN a useState hace que solo se ejecute al montar.
+  const [modoOscuro, setModoOscuro] = useState(
+    () => leerDeLocalStorage(CLAVE_TEMA, false) === true
+  )
 
-  // Texto que el usuario está escribiendo en el campo de entrada
-  const [texto, setTexto] = useState('')
+  // --- Conversaciones: también se recuperan de localStorage ---
+  // Así, si recargas la página, no pierdes lo que conversaste.
+  const [conversaciones, setConversaciones] = useState(() =>
+    leerDeLocalStorage(CLAVE_CONVERSACIONES, crearConversacionesIniciales())
+  )
 
-  // true mientras el contacto simulado "está escribiendo"
-  const [escribiendo, setEscribiendo] = useState(false)
+  // --- Contadores de mensajes no leídos por contacto ---
+  const [noLeidos, setNoLeidos] = useState(() =>
+    leerDeLocalStorage(CLAVE_NO_LEIDOS, crearNoLeidosIniciales())
+  )
 
-  // useRef guarda valores que no necesitan redibujar la pantalla:
-  // el contador de ids y el índice de la próxima respuesta.
-  const siguienteId = useRef(2)
-  const indiceRespuesta = useRef(0)
+  // --- Contacto cuya conversación está abierta ---
+  const [contactoActivoId, setContactoActivoId] = useState(CONTACTOS[0].id)
 
-  // Referencia a la zona de mensajes para hacer auto-scroll
-  const zonaMensajes = useRef(null)
+  // --- Contacto que está escribiendo (su id) o null ---
+  const [escribiendoId, setEscribiendoId] = useState(null)
 
-  // useEffect se ejecuta tras cada cambio de la lista:
-  // baja el scroll para que se vea el mensaje más reciente.
+  // useRef para datos que NO deben provocar un nuevo render:
+  // - contador global de ids únicos para los mensajes
+  // - en qué respuesta va cada contacto (índice por contacto)
+  // - cuál es el contacto activo (para leerlo dentro de setTimeout
+  //   sin depender de un estado que puede haber cambiado)
+  const siguienteId = useRef(1)
+  const indiceRespuestaPorContacto = useRef({})
+  const contactoActivoRef = useRef(contactoActivoId)
+
+  // Mantener la ref sincronizada con el estado del contacto activo
   useEffect(() => {
-    const zona = zonaMensajes.current
-    if (zona) {
-      zona.scrollTop = zona.scrollHeight
-    }
-  }, [mensajes])
+    contactoActivoRef.current = contactoActivoId
+  }, [contactoActivoId])
 
-  // Simula que el contacto escribe y responde tras una pausa
-  function responderAutomaticamente() {
-    setEscribiendo(true)
-    const espera = 900 + Math.random() * 900
+  // --- Persistencia en localStorage con useEffect ---
+  // Cada vez que cambia el tema, las conversaciones o los
+  // no leídos, se guarda una copia en el navegador.
+
+  useEffect(() => {
+    localStorage.setItem(CLAVE_TEMA, JSON.stringify(modoOscuro))
+    // También reflejamos el tema en <html> para los estilos globales
+    document.documentElement.dataset.tema = modoOscuro ? 'oscuro' : 'claro'
+  }, [modoOscuro])
+
+  useEffect(() => {
+    localStorage.setItem(CLAVE_CONVERSACIONES, JSON.stringify(conversaciones))
+  }, [conversaciones])
+
+  useEffect(() => {
+    localStorage.setItem(CLAVE_NO_LEIDOS, JSON.stringify(noLeidos))
+  }, [noLeidos])
+
+  // Contacto activo como objeto completo (para pasarlo por props)
+  const contactoActivo =
+    CONTACTOS.find((contacto) => contacto.id === contactoActivoId) || CONTACTOS[0]
+
+  // Devuelve el último mensaje de una conversación (o null).
+  // Lo usa la lista lateral para la vista previa y la hora.
+  function ultimoMensajeDe(contactoId) {
+    const mensajes = conversaciones[contactoId] || []
+    return mensajes.length > 0 ? mensajes[mensajes.length - 1] : null
+  }
+
+  // Al hacer clic en un contacto: se abre su conversación y
+  // su contador de no leídos se pone a cero.
+  function seleccionarContacto(contactoId) {
+    setContactoActivoId(contactoId)
+    setNoLeidos((previos) => ({ ...previos, [contactoId]: 0 }))
+  }
+
+  // Agrega un mensaje a la conversación de un contacto concreto.
+  // Siempre se crea un objeto NUEVO de conversaciones y un
+  // arreglo NUEVO para esa conversación (inmutabilidad).
+  function agregarMensaje(contactoId, mensaje) {
+    setConversaciones((previas) => ({
+      ...previas,
+      [contactoId]: [...(previas[contactoId] || []), mensaje],
+    }))
+  }
+
+  // Programa la respuesta simulada de un contacto:
+  // 1. muestra "escribiendo…" durante 1–2 segundos
+  // 2. elige la siguiente respuesta de SU banco propio
+  // 3. agrega el mensaje; si esa conversación NO está abierta,
+  //    suma 1 a su contador de no leídos
+  function programarRespuesta(contacto) {
+    setEscribiendoId(contacto.id)
+
+    const espera = 1100 + Math.random() * 1000
 
     setTimeout(() => {
-      const respuesta = RESPUESTAS[indiceRespuesta.current % RESPUESTAS.length]
-      indiceRespuesta.current += 1
-      setMensajes((previos) => [
-        ...previos,
-        { id: siguienteId.current++, texto: respuesta, autor: 'contacto', hora: horaActual() },
-      ])
-      setEscribiendo(false)
+      const indiceActual = indiceRespuestaPorContacto.current[contacto.id] || 0
+      const respuesta =
+        contacto.respuestas[indiceActual % contacto.respuestas.length]
+      indiceRespuestaPorContacto.current[contacto.id] = indiceActual + 1
+
+      agregarMensaje(contacto.id, {
+        id: `msg-${siguienteId.current++}`,
+        texto: respuesta,
+        autor: 'contacto',
+        hora: horaActual(),
+      })
+
+      // Solo limpiamos "escribiendo" si sigue siendo este contacto
+      setEscribiendoId((actual) => (actual === contacto.id ? null : actual))
+
+      // Si el usuario cambió de conversación mientras llegaba
+      // la respuesta, ese mensaje cuenta como no leído.
+      if (contactoActivoRef.current !== contacto.id) {
+        setNoLeidos((previos) => ({
+          ...previos,
+          [contacto.id]: (previos[contacto.id] || 0) + 1,
+        }))
+      }
     }, espera)
   }
 
-  // Al enviar el formulario (botón o tecla Enter en el campo)
-  function enviarMensaje(evento) {
-    evento.preventDefault() // evita que la página se recargue
+  // Enviar un mensaje al contacto activo (lo llama VentanaChat)
+  function enviarMensaje(texto) {
+    const contacto = contactoActivo
 
-    const limpio = texto.trim()
-    if (limpio === '') return // no enviar mensajes vacíos
+    agregarMensaje(contacto.id, {
+      id: `msg-${siguienteId.current++}`,
+      texto,
+      autor: 'yo',
+      hora: horaActual(),
+    })
 
-    // Se crea un arreglo NUEVO (no se modifica el anterior):
-    // así es como se actualiza el estado en React.
-    setMensajes((previos) => [
-      ...previos,
-      { id: siguienteId.current++, texto: limpio, autor: 'yo', hora: horaActual() },
-    ])
-    setTexto('')
-    responderAutomaticamente()
+    programarRespuesta(contacto)
+  }
+
+  // Borra el historial guardado y vuelve a las conversaciones
+  // iniciales. Útil para "empezar de cero" y para demostrar
+  // el manejo de localStorage.
+  function reiniciarConversaciones() {
+    setConversaciones(crearConversacionesIniciales())
+    setNoLeidos(crearNoLeidosIniciales())
+    indiceRespuestaPorContacto.current = {}
+    setEscribiendoId(null)
   }
 
   return (
-    <main className="chat">
-      {/* Cabecera: avatar, nombre y estado del contacto */}
-      <header className="chat-cabecera">
-        <div className="avatar">A</div>
-        <div className="chat-info">
-          <h1>Ana (contacto simulado)</h1>
-          <p>{escribiendo ? 'escribiendo...' : 'en línea'}</p>
+    <div className={`app ${modoOscuro ? 'tema-oscuro' : 'tema-claro'}`}>
+      {/* --- Barra superior de la aplicación --- */}
+      <header className="app-cabecera">
+        <div className="app-marca">
+          <span className="app-logo" aria-hidden="true">
+            💬
+          </span>
+          <div>
+            <h1>WebChat</h1>
+            <p>Chat con React · Carlos Destrades — UCI</p>
+          </div>
+        </div>
+
+        <div className="app-acciones">
+          <button
+            type="button"
+            className="btn-secundario"
+            onClick={reiniciarConversaciones}
+            title="Borrar el historial guardado y empezar de nuevo"
+          >
+            Reiniciar chats
+          </button>
+          {/* Interruptor de modo oscuro */}
+          <button
+            type="button"
+            className="btn-tema"
+            onClick={() => setModoOscuro((previo) => !previo)}
+            aria-pressed={modoOscuro}
+            title={modoOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          >
+            {modoOscuro ? '☀️ Claro' : '🌙 Oscuro'}
+          </button>
         </div>
       </header>
 
-      {/* Lista de mensajes: un componente <Mensaje /> por elemento */}
-      <section className="mensajes" ref={zonaMensajes}>
-        {mensajes.map((mensaje) => (
-          <Mensaje key={mensaje.id} mensaje={mensaje} />
-        ))}
-      </section>
-
-      {/* Formulario controlado: el valor del input vive en el estado */}
-      <form className="chat-entrada" onSubmit={enviarMensaje}>
-        <input
-          type="text"
-          placeholder="Escribe un mensaje..."
-          autoComplete="off"
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
+      {/* --- Cuerpo: lista de contactos + ventana de chat --- */}
+      <main className="app-cuerpo">
+        <ListaContactos
+          contactos={CONTACTOS}
+          contactoActivoId={contactoActivoId}
+          noLeidos={noLeidos}
+          ultimoMensaje={ultimoMensajeDe}
+          onSeleccionar={seleccionarContacto}
         />
-        <button type="submit">Enviar</button>
-      </form>
-    </main>
+
+        <VentanaChat
+          contacto={contactoActivo}
+          mensajes={conversaciones[contactoActivoId] || []}
+          escribiendo={escribiendoId === contactoActivoId}
+          onEnviar={enviarMensaje}
+        />
+      </main>
+
+      <footer className="app-pie">
+        <small>
+          Proyecto de práctica con React + Vite — los contactos y sus respuestas
+          son simulados, sin servidor real.
+        </small>
+      </footer>
+    </div>
   )
 }

@@ -1,42 +1,287 @@
-/* Estilos de los componentes del WebChat */
+/* ==========================================================
+   Estilos de la aplicación WebChat
 
-/* Contenedor principal del chat */
-.chat {
-  width: 100%;
-  max-width: 480px;
-  height: 92vh;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, .2);
+   Estrategia de temas:
+   - Se definen VARIABLES CSS para cada color.
+   - .tema-claro y .tema-oscuro solo cambian los valores.
+   - El resto de reglas usa var(--...) y no necesita saber
+     qué tema está activo. Cambiar de tema es cambiar una clase.
+   ========================================================== */
+
+/* --- Variables: tema claro (por defecto) --- */
+.tema-claro {
+  --fondo-app: #ece5dd;
+  --fondo-panel: #ffffff;
+  --fondo-sidebar: #ffffff;
+  --fondo-cabecera: #075e54;
+  --fondo-mensajes: #e5ddd5;
+  --fondo-entrada: #f0f0f0;
+  --fondo-hover: #f5f5f5;
+  --fondo-activo: #ebebeb;
+  --texto: #111111;
+  --texto-suave: #667781;
+  --borde: #e0e0e0;
+  --burbuja-mia: #dcf8c6;
+  --burbuja-contacto: #ffffff;
+  --acento: #075e54;
+  --acento-hover: #0a7a6d;
+  --badge: #25d366;
+  --sombra: 0 4px 24px rgba(0, 0, 0, 0.18);
 }
 
-/* Cabecera con el contacto */
+/* --- Variables: tema oscuro --- */
+.tema-oscuro {
+  --fondo-app: #0b141a;
+  --fondo-panel: #111b21;
+  --fondo-sidebar: #111b21;
+  --fondo-cabecera: #202c33;
+  --fondo-mensajes: #0b141a;
+  --fondo-entrada: #202c33;
+  --fondo-hover: #202c33;
+  --fondo-activo: #2a3942;
+  --texto: #e9edef;
+  --texto-suave: #8696a0;
+  --borde: #222d34;
+  --burbuja-mia: #005c4b;
+  --burbuja-contacto: #202c33;
+  --acento: #00a884;
+  --acento-hover: #06cf9c;
+  --badge: #00a884;
+  --sombra: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Contenedor general de la app --- */
+.app {
+  width: 100%;
+  max-width: 1080px;
+  height: 94vh;
+  margin: 0 auto;
+  background: var(--fondo-panel);
+  color: var(--texto);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--sombra);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+/* --- Cabecera superior de la app --- */
+.app-cabecera {
+  background: var(--fondo-cabecera);
+  color: #ffffff;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.app-marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-logo { font-size: 26px; }
+.app-marca h1 { font-size: 19px; line-height: 1.1; }
+.app-marca p { font-size: 12px; opacity: 0.85; }
+
+.app-acciones {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-tema,
+.btn-secundario {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: transparent;
+  color: #ffffff;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-tema:hover,
+.btn-secundario:hover { background: rgba(255, 255, 255, 0.14); }
+
+/* --- Cuerpo: sidebar + chat --- */
+.app-cuerpo {
+  flex: 1;
+  display: flex;
+  min-height: 0; /* permite que los hijos tengan su propio scroll */
+  background: var(--fondo-app);
+}
+
+/* ==========================================================
+   Barra lateral: buscador + lista de contactos
+   ========================================================== */
+.sidebar {
+  width: 320px;
+  min-width: 260px;
+  background: var(--fondo-sidebar);
+  border-right: 1px solid var(--borde);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.buscador {
+  padding: 10px;
+  border-bottom: 1px solid var(--borde);
+  display: flex;
+  gap: 6px;
+}
+
+.buscador input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  font-size: 14px;
+  outline: none;
+  background: var(--fondo-entrada);
+  color: var(--texto);
+}
+
+.buscador input:focus { border-color: var(--acento); }
+
+.buscador-limpiar {
+  border: none;
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 6px;
+}
+
+.lista-contactos {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.contacto-item {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  border: none;
+  border-bottom: 1px solid var(--borde);
+  background: transparent;
+  color: var(--texto);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.contacto-item:hover { background: var(--fondo-hover); }
+.contacto-item.activo { background: var(--fondo-activo); }
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.avatar-grande { width: 46px; height: 46px; min-width: 46px; }
+
+.contacto-datos {
+  flex: 1;
+  min-width: 0; /* permite recortar textos largos con ellipsis */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.contacto-fila-superior,
+.contacto-fila-inferior {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.contacto-nombre {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contacto-hora {
+  font-size: 11px;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.contacto-preview {
+  font-size: 13px;
+  color: var(--texto-suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bolita verde con el número de mensajes no leídos */
+.badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--badge);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sin-resultados {
+  padding: 16px;
+  font-size: 14px;
+  color: var(--texto-suave);
+  text-align: center;
+}
+
+/* ==========================================================
+   Ventana de chat (derecha)
+   ========================================================== */
+.ventana-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--fondo-panel);
+}
+
 .chat-cabecera {
-  background: #075e54;
-  color: #fff;
-  padding: 12px 16px;
+  background: var(--fondo-cabecera);
+  color: #ffffff;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: #25d366;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 20px;
-}
-
-.chat-info h1 { font-size: 17px; }
-.chat-info p { font-size: 13px; opacity: .85; }
+.chat-info h2 { font-size: 16px; line-height: 1.2; }
+.chat-descripcion { font-size: 12px; opacity: 0.85; }
+.chat-estado { font-size: 12px; opacity: 0.9; }
+.escribiendo-texto { font-style: italic; }
 
 /* Zona de mensajes: crece y tiene scroll propio */
 .mensajes {
@@ -46,58 +291,144 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #e5ddd5;
+  background: var(--fondo-mensajes);
 }
 
 /* Burbuja de mensaje (común) */
 .mensaje {
-  max-width: 75%;
-  padding: 8px 12px;
+  max-width: 72%;
+  padding: 8px 11px 6px;
   border-radius: 10px;
   font-size: 15px;
-  line-height: 1.35;
+  line-height: 1.4;
   word-wrap: break-word;
+  color: var(--texto);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+}
+
+.mensaje-texto { white-space: pre-wrap; }
+
+.mensaje-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
 }
 
 .mensaje .hora {
-  display: block;
   font-size: 11px;
-  color: #666;
-  text-align: right;
-  margin-top: 4px;
+  color: var(--texto-suave);
 }
 
-/* Mis mensajes: a la derecha y en verde claro */
-.mensaje.yo { align-self: flex-end; background: #dcf8c6; }
+.mensaje .checks {
+  font-size: 11px;
+  color: #34b7f1;
+  letter-spacing: -2px;
+}
 
-/* Mensajes del contacto: a la izquierda y en blanco */
-.mensaje.contacto { align-self: flex-start; background: #fff; }
+/* Mis mensajes: a la derecha */
+.mensaje.yo {
+  align-self: flex-end;
+  background: var(--burbuja-mia);
+  border-bottom-right-radius: 2px;
+}
+
+/* Mensajes del contacto: a la izquierda */
+.mensaje.contacto {
+  align-self: flex-start;
+  background: var(--burbuja-contacto);
+  border-bottom-left-radius: 2px;
+}
+
+/* Burbuja de "escribiendo…" con puntos animados */
+.mensaje-escribiendo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--texto-suave);
+}
+
+.escribiendo-label { font-size: 13px; font-style: italic; }
+
+.puntos { display: inline-flex; gap: 4px; }
+
+.puntos span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--texto-suave);
+  animation: parpadeo 1.2s infinite;
+}
+
+.puntos span:nth-child(2) { animation-delay: 0.15s; }
+.puntos span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes parpadeo {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
 
 /* Zona de escritura */
 .chat-entrada {
   display: flex;
   gap: 8px;
   padding: 10px;
-  background: #f0f0f0;
+  background: var(--fondo-entrada);
+  border-top: 1px solid var(--borde);
 }
 
 .chat-entrada input {
   flex: 1;
   padding: 10px 14px;
-  border: 1px solid #ccc;
-  border-radius: 20px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
   font-size: 15px;
   outline: none;
+  background: var(--fondo-panel);
+  color: var(--texto);
 }
+
+.chat-entrada input:focus { border-color: var(--acento); }
 
 .chat-entrada button {
   padding: 10px 18px;
   border: none;
-  border-radius: 20px;
-  background: #075e54;
-  color: #fff;
+  border-radius: 999px;
+  background: var(--acento);
+  color: #ffffff;
   font-size: 15px;
   cursor: pointer;
 }
 
-.chat-entrada button:hover { background: #0a7a6d; }
+.chat-entrada button:hover:not(:disabled) { background: var(--acento-hover); }
+.chat-entrada button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Pie de la app */
+.app-pie {
+  padding: 7px 12px;
+  text-align: center;
+  color: var(--texto-suave);
+  background: var(--fondo-panel);
+  border-top: 1px solid var(--borde);
+}
+
+/* ==========================================================
+   Diseño responsive: en pantallas estrechas la lista pasa
+   arriba y el chat debajo, cada uno con su altura.
+   ========================================================== */
+@media (max-width: 720px) {
+  .app { height: 100dvh; border-radius: 0; }
+
+  .app-cuerpo { flex-direction: column; }
+
+  .sidebar {
+    width: 100%;
+    min-width: 0;
+    max-height: 38%;
+    border-right: none;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .mensaje { max-width: 86%; }
+}
